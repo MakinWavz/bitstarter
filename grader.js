@@ -22,7 +22,6 @@ References:
 */
 
 var fs = require('fs');
-var sys = require('util');
 var program = require('commander');
 var cheerio = require('cheerio');
 var rest = require('restler');
@@ -39,21 +38,13 @@ var assertFileExists = function(infile) {
 };
 
 var cheerioHtmlFile = function(htmlfile) {
-    console.log('in read file');
     return cheerio.load(fs.readFileSync(htmlfile));
 };
 
 var cheerioURL = function(url) {
-    // return cheerio.load(rest.get(url).on('complete', data));
-    console.log('about to get web file');
     rest.get(program.url).on('complete', function(data) {
-      console.log('web site loaded');
-      //sys.puts(data);
-      //return cheerio.load(data);
-     console.log('call back complete - exit');
-     checkJson = checkHtmlFile(data, program.checks);
-    var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+      checkJson = checkHtmlFile(data, program.checks);
+      outputResults(checkJson);
     });
 };      
 
@@ -63,14 +54,10 @@ var loadChecks = function(checksfile) {
 
 var checkHtmlFile = function(htmlfile, checksfile) {
     if (program.url) {
-      console.log('about to check html file');
-      sys.puts(htmlfile);
       $ = cheerio.load(htmlfile);
-    }
-    else {
+    } else {
       $ = cheerioHtmlFile(htmlfile);
     }
-    console.log('about to load checksfile');
     var checks = loadChecks(checksfile).sort();
     var out = {};
     for(var ii in checks) {
@@ -78,6 +65,11 @@ var checkHtmlFile = function(htmlfile, checksfile) {
         out[checks[ii]] = present;
     }
     return out;
+};
+
+var outputResults = function(chkJson) {
+  var outJson = JSON.stringify(chkJson, null, 4);
+  console.log(outJson);
 };
 
 var clone = function(fn) {
@@ -95,12 +87,10 @@ if(require.main == module) {
 
     if (program.url) {
       var checkJson = cheerioURL(program.url);
-    } else
-    {  
-      var checkJson = checkHtmlFile(program.url || program.file, program.checks);
+    } else {
+      var checkJson = checkHtmlFile(program.file, program.checks);
+      outputResults(checkJson);
     }
-    //var outJson = JSON.stringify(checkJson, null, 4);
-    //console.log(outJson);
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
